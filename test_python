@@ -2,46 +2,78 @@ import sqlite3
 import os
 import pickle
 import subprocess
+import yaml
+import hashlib
 
-# Vulnérabilité 1 : Injection SQL (OWASP A03:2021)
-def get_user_data(user_id):
+# Vulnérabilité 1 : Injection SQL explicite (OWASP A03:2021)
+def get_user_data(user_input):
     conn = sqlite3.connect('users.db')
-    query = "SELECT * FROM users WHERE id = " + user_id  # Injection SQL directe
+    query = "SELECT * FROM users WHERE username = '" + user_input + "'"  # Injection SQL directe
     cursor = conn.execute(query)
     return cursor.fetchall()
 
-# Vulnérabilité 2 : Utilisation de pickle non sécurisée (OWASP A08:2021)
-def load_user_data(file_path):
-    with open(file_path, 'rb') as f:
-        return pickle.load(f)  # Désérialisation non sécurisée
+# Vulnérabilité 2 : Désérialisation non sécurisée avec pickle (OWASP A08:2021)
+def load_user_config(config_file):
+    with open(config_file, 'rb') as f:
+        return pickle.load(f)  # Utilisation dangereuse de pickle
 
-# Vulnérabilité 3 : Commande système non sécurisée (OWASP A01:2021)
-def run_system_command(command):
-    return subprocess.run(command, shell=True)  # Exécution de commande shell non validée
+# Vulnérabilité 3 : Désérialisation YAML non sécurisée (OWASP A08:2021)
+def parse_yaml_config(yaml_file):
+    with open(yaml_file, 'r') as f:
+        return yaml.load(f, Loader=yaml.Loader)  # Désérialisation YAML non sécurisée
 
-# Vulnérabilité 4 : Données sensibles exposées (OWASP A04:2021)
-def log_credentials(username, password):
-    with open('logs.txt', 'a') as f:
-        f.write(f"User: {username}, Password: {password}\n")  # Stockage de mots de passe en clair
+# Vulnérabilité 4 : Exécution de commande shell (OWASP A01:2021)
+def execute_command(user_command):
+    return os.system(user_command)  # Exécution directe de commande shell
 
-# Vulnérabilité 5 : Absence de validation d'entrée
-def process_input(data):
-    return eval(data)  # Utilisation dangereuse de eval
+# Vulnérabilité 5 : Stockage de mots de passe en clair (OWASP A04:2021)
+def save_credentials(username, password):
+    with open('credentials.txt', 'a') as f:
+        f.write(f"Username: {username}, Password: {password}\n")  # Mots de passe en clair
+
+# Vulnérabilité 6 : Utilisation de hash faible (OWASP A02:2021)
+def hash_password(password):
+    return hashlib.md5(password.encode()).hexdigest()  # Utilisation de MD5, algorithme faible
+
+# Vulnérabilité 7 : Utilisation de eval (OWASP A03:2021)
+def evaluate_expression(user_expression):
+    return eval(user_expression)  # Exécution de code arbitraire
+
+# Vulnérabilité 8 : Exposition de données sensibles dans les logs
+def log_sensitive_data(user_data):
+    print(f"Debug: User data = {user_data}")  # Exposition dans les logs
 
 # Exemple d'utilisation
 if __name__ == "__main__":
-    user_id = input("Entrez l'ID utilisateur : ")
-    print(get_user_data(user_id))
-
-    file_path = input("Entrez le chemin du fichier : ")
-    print(load_user_data(file_path))
-
+    # Injection SQL
+    username = input("Entrez le nom d'utilisateur : ")
+    print(get_user_data(username))
+    
+    # Désérialisation pickle
+    config_file = input("Entrez le chemin du fichier de configuration : ")
+    print(load_user_config(config_file))
+    
+    # Désérialisation YAML
+    yaml_file = input("Entrez le chemin du fichier YAML : ")
+    print(parse_yaml_config(yaml_file))
+    
+    # Exécution de commande
     command = input("Entrez une commande système : ")
-    run_system_command(command)
-
+    execute_command(command)
+    
+    # Stockage de credentials
     username = input("Nom d'utilisateur : ")
     password = input("Mot de passe : ")
-    log_credentials(username, password)
-
-    user_input = input("Entrez une expression : ")
-    print(process_input(user_input))
+    save_credentials(username, password)
+    
+    # Hash faible
+    password = input("Entrez un mot de passe à hasher : ")
+    print(hash_password(password))
+    
+    # Eval
+    expression = input("Entrez une expression Python : ")
+    print(evaluate_expression(expression))
+    
+    # Log sensible
+    user_data = {"ssn": "123-45-6789", "credit_card": "4111111111111111"}
+    log_sensitive_data(user_data)
