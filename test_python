@@ -1,0 +1,47 @@
+import sqlite3
+import os
+import pickle
+import subprocess
+
+# Vulnérabilité 1 : Injection SQL (OWASP A03:2021)
+def get_user_data(user_id):
+    conn = sqlite3.connect('users.db')
+    query = "SELECT * FROM users WHERE id = " + user_id  # Injection SQL directe
+    cursor = conn.execute(query)
+    return cursor.fetchall()
+
+# Vulnérabilité 2 : Utilisation de pickle non sécurisée (OWASP A08:2021)
+def load_user_data(file_path):
+    with open(file_path, 'rb') as f:
+        return pickle.load(f)  # Désérialisation non sécurisée
+
+# Vulnérabilité 3 : Commande système non sécurisée (OWASP A01:2021)
+def run_system_command(command):
+    return subprocess.run(command, shell=True)  # Exécution de commande shell non validée
+
+# Vulnérabilité 4 : Données sensibles exposées (OWASP A04:2021)
+def log_credentials(username, password):
+    with open('logs.txt', 'a') as f:
+        f.write(f"User: {username}, Password: {password}\n")  # Stockage de mots de passe en clair
+
+# Vulnérabilité 5 : Absence de validation d'entrée
+def process_input(data):
+    return eval(data)  # Utilisation dangereuse de eval
+
+# Exemple d'utilisation
+if __name__ == "__main__":
+    user_id = input("Entrez l'ID utilisateur : ")
+    print(get_user_data(user_id))
+
+    file_path = input("Entrez le chemin du fichier : ")
+    print(load_user_data(file_path))
+
+    command = input("Entrez une commande système : ")
+    run_system_command(command)
+
+    username = input("Nom d'utilisateur : ")
+    password = input("Mot de passe : ")
+    log_credentials(username, password)
+
+    user_input = input("Entrez une expression : ")
+    print(process_input(user_input))
